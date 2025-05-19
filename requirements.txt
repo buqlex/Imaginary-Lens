@@ -1,7 +1,8 @@
-pyqt6==6.4.2
-pyqt6-tools==6.4.2.3.3
 torch
-torchvision
-ftfy
-regex
-tqdm
+gunicorn
+numpy
+pillow
+Flask
+pandas
+transformers
+faiss-cpu
