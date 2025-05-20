@@ -6,3 +6,4 @@ Flask
 pandas
 transformers
 faiss-cpu
+jina

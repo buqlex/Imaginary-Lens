@@ -7,6 +7,9 @@ import faiss
 import pickle
 import random
 from transformers import CLIPTokenizerFast, CLIPImageProcessor, CLIPModel
+import nltk
+from nltk.corpus import stopwords
+from translate import Translator
 
 app = Flask(__name__)
 
@@ -84,9 +87,15 @@ def extract_key_terms(query):
     return terms
 
 
+def translate_ru_to_en(text):
+    translator = Translator(from_lang="ru", to_lang="en")
+    translation = translator.translate(text)
+    return translation
+
+
 @app.route('/search', methods=['GET'])
 def query_search():
-    query = request.args.get('query')
+    query = translate_ru_to_en(request.args.get('query'))
     accuracy = request.args.get('accuracy', '50')  # Default to 50%
     threshold = float(accuracy) / 100  # Convert to [0,1] scale
 

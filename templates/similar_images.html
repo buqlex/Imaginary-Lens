@@ -1,70 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Search Engine</title>
-    <script>
-        function onImageClick(imagePath) {
-            fetch('/similar-images?image_path=' + encodeURIComponent(imagePath))
-                .then(response => response.text())
-                .then(html => {
-                    document.body.innerHTML = html;
-                });
-        }
-    </script>
-    <style>
-        html { background: black; }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            grid-gap: 2px;
-            grid-auto-rows: minmax(160px, auto);
-            grid-auto-flow: dense;
-        }
-        .c-1 { background: #000000; color: #ddd; }
-        .card { min-height: 200px; background-size: contain; background-position: center; background-repeat: no-repeat; position: relative; }
-        .span-2 { grid-column-end: span 2; grid-row-end: span 2; min-height: 400px; }
-        .span-3 { grid-column-end: span 3; grid-row-end: span 3; min-height: 800px; }
-        .accuracy {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            padding: 5px;
-            width: 100%;
-            font-size: 12px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image Search Engine</title>
+  <style>
+    html {
+      background: #0a0a0a;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      color: #fff;
+    }
+
+    .form-container {
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 10, 0.95);
+      padding: 1rem;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #333;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    input[type="text"] {
+      padding: 0.8rem;
+      background: #1a1a1a;
+      color: white;
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
+
+    button[type="submit"] {
+      padding: 0.8rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-gap: 10px;
+      padding: 1rem;
+    }
+
+    .image-card {
+      background: #111;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      transition: transform 0.3s;
+    }
+
+    .image-card:hover {
+      transform: scale(1.03);
+    }
+
+    .image-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3/2;
+      background-color: #222;
+    }
+
+    .image-wrapper img {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .accuracy {
+      background: rgba(0, 0, 0, 0.6);
+      color: #eee;
+      font-size: 12px;
+      padding: 0.5rem;
+    }
+
+    .accuracy b {
+      color: #00ffaa;
+    }
+
+    .no-results {
+      text-align: center;
+      margin-top: 2rem;
+      color: #ccc;
+    }
+  </style>
 </head>
 <body>
+  <div class="form-container">
     <h1>Image Search Engine</h1>
     <form action="/search" method="get">
-        <input type="text" name="query" placeholder="Enter your search query" required>
-        <label for="accuracy">Accuracy threshold: <span id="accuracy_value">50</span>%</label>
-        <input type="range" id="accuracy" name="accuracy" min="0" max="100" value="50" step="1" oninput="document.getElementById('accuracy_value').innerText = this.value">
-        <button type="submit">Search</button>
+      <input type="text" name="query" placeholder="Enter your search query" required>
+      <label for="accuracy">Accuracy threshold: <span id="accuracy_value">50</span>%</label>
+      <input type="range" id="accuracy" name="accuracy" min="0" max="100" value="50" step="1" oninput="document.getElementById('accuracy_value').innerText = this.value">
+      <button type="submit">Search</button>
     </form>
-    {% if images %}
-        <div class="grid">
-            {% for image in images %}
-                {% set span = weighted_rand({1:0.7, 2:0.2, 3:0.1}) %}
-                {% set url = url_for('static', filename=image) %}
-                {% set card_class = 'card span-' ~ span ~ ' c-1' %}
-                <div style="background-image: url({{ url }})" class="{{ card_class }}" onclick="onImageClick('{{ image }}')">
-                    {% if image_accuracies and image in image_accuracies %}
-                        <div class="accuracy">
-                            {% for term, acc in image_accuracies[image].items() %}
-                                {{ term }}: {{ acc|round(1) }}%<br>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endfor %}
+  </div>
+
+  {% if images %}
+    <div class="grid">
+      {% for image in images %}
+        {% set url = url_for('static', filename=image) %}
+        <div class="image-card" onclick="onImageClick('{{ image }}')">
+          <div class="image-wrapper">
+            <img src="{{ url }}" alt="Image"/>
+          </div>
+          {% if image_accuracies and image in image_accuracies %}
+            <div class="accuracy">
+              {% for term, acc in image_accuracies[image].items() %}
+                {{ term }}: <b>{{ acc|round(1) }}%</b><br>
+              {% endfor %}
+            </div>
+          {% endif %}
         </div>
-    {% else %}
-        <p>No images found that meet the accuracy threshold.</p>
-    {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="no-results">No images found that meet the accuracy threshold.</p>
+  {% endif %}
+
+  <script>
+    function onImageClick(imagePath) {
+      fetch('/similar-images?image_path=' + encodeURIComponent(imagePath))
+        .then(response => response.text())
+        .then(html => {
+          document.body.innerHTML = html;
+        });
+    }
+  </script>
 </body>
 </html>
